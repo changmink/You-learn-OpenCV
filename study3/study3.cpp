@@ -66,7 +66,7 @@ int main()
 //#include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
-
+using namespace std;
 int main()
 {
 	//원본 이미지
@@ -89,25 +89,26 @@ int main()
 	G.convertTo(M, CV_32F, -1.0, 1);
 	B.convertTo(Y, CV_32F, -1.0, 1);
 
-
+	//할당해 주기위해서 사용
 	cv::Mat dum0(image.rows, image.cols, CV_32FC1);
 	cv::Mat dum1(image.rows, image.cols, CV_32FC1);
 	cv::Mat dum2(image.rows, image.cols, CV_32FC1);
-	cv::Mat vCMY[3] = { dum0, dum1, dum2 };//할당해 주기위해서 사용
+	cv::Mat vCMY[3] = { dum0, dum1, dum2 };
 
+	//CMY출력 CMY의 원래색을 보려면 1에서 빼주어야함(BGR영역에서 출력하므로)
 	cv::Mat Buf;
-	vCMY[0] = 0;		vCMY[1] = 0;		C.copyTo(vCMY[2]);						// Make 3 channel Cyan. C=B+G
+	vCMY[0] = 0;		vCMY[1] = 0;		C.copyTo(vCMY[2]);						
 	cv::merge(vCMY, 3, Buf);		cv::imshow("Cyan", cv::Scalar(1, 1, 1) - Buf);
-	vCMY[0] = 0;		M.copyTo(vCMY[1]);		vCMY[2] = 0;						// Make 3 channel Magenta. M=B+R
+	vCMY[0] = 0;		M.copyTo(vCMY[1]);		vCMY[2] = 0;				
 	cv::merge(vCMY, 3, Buf);		cv::imshow("Magenta", cv::Scalar(1, 1, 1) - Buf);
-	Y.copyTo(vCMY[0]);		vCMY[1] = 0;		vCMY[2] = 0;						// Make 3 channel Yellow. Y=G+R
+	Y.copyTo(vCMY[0]);		vCMY[1] = 0;		vCMY[2] = 0;
 	cv::merge(vCMY, 3, Buf);		cv::imshow("Yellow", cv::Scalar(1, 1, 1) - Buf);
 	cv::waitKey();
 
 	//CMYK만들기
 	cv::Mat K, inkK;
 	K = min(C, M); 	K = min(K, Y);//3개 중에서 제일 작은거
-	K.convertTo(inkK, -1, -1.0, 1);	// 1 - K
+	K.convertTo(inkK, -1, -1.0, 1);	// 1 - K = RGB영역에서의 K의 색
 	cv::namedWindow("CMYK K on white paper");	cv::imshow("CMYK K on white paper", inkK);
 
 	//CMYK의 CMY구하기
@@ -126,26 +127,33 @@ int main()
 	vBuf[0] = 0;		vBuf[1] = 0;		C1.copyTo(vBuf[2]);	
 	cv::merge(vBuf, Buf);
 	Buf.convertTo(inkC, -1, -1.0, 1);//	cv::Scalar(1, 1, 1) -  inkC와 같음
-	cv::imshow("CMYK Cyan on white paper", inkC);//
+	cv::imshow("CMYK Cyan", inkC);//
 
 	vBuf[0] = 0;		M1.copyTo(vBuf[1]);		vBuf[2] = 0;
 	cv::merge(vBuf, Buf);
 	Buf.convertTo(inkM, -1, -1.0, 1);
-	cv::imshow("CMYK Magenta on white paper", inkM);
+	cv::imshow("CMYK Magenta", inkM);
 
 	Y1.copyTo(vBuf[0]);		vBuf[1] = 0;		vBuf[2] = 0;
 	cv::merge(vBuf, Buf);
 	Buf.convertTo(inkY, -1, -1.0, 1);
-	cv::imshow("CMYK Yellow on white paper", inkY);
-	cv::waitKey();   	return 0;
+	cv::imshow("CMYK Yellow", inkY);
+	cv::waitKey(0);
 
-	// not finished ! Dispaly the combined inks.
-	//cv::Mat Mix = C1 + M1 + Y1 + K;
-	//cv::imshow("CMYK on white paper", Mix);
+	//CMYK 결합
+	cv::Mat Mix = C1 + M1 + Y1 + K;// 잘못됨
+
+	Y1.copyTo(vBuf[0]);	M1.copyTo(vBuf[1]);	C1.copyTo(vBuf[2]);
+	vBuf[0] += K; vBuf[1] += K;	vBuf[2] += K;
+	cv::merge(vBuf, Mix);
+	
+	cv::imshow("CMYK", cv::Scalar(1, 1, 1) - Mix);
+	cv::waitKey(0);   	return 0;
 
 }
 #endif
 #if SUBJECT == 2
+//HSV
 #include <iostream>
 //#include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
