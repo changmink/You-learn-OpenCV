@@ -1,8 +1,8 @@
-#define SUBJECT 1
+#define SUBJECT 0
 
 //사용될 파일 경로
-char	Directory[80] = "c:/cmk/miniStudy/";
-char	lulu[50] = "Lulu.jpg";
+char	Directory[80] = "D:\\GoogleDrive\\miniStudy\\images/";
+char	lulu[50] = "Lulu.jpg";	
 
 #if SUBJECT == 0
 
@@ -23,7 +23,7 @@ int main()
 	std::vector<cv::Mat> vBGR;// 배열을 만듬 vector는 c++의 특별한 배열이라고 이해하자(파이썬의 리스트같은)				
 	cv::split(image, vBGR);	//Mat형이 3개가 나옴
 
-							// Mat 형 배열도 사용 가능함
+	// Mat 형 배열도 사용 가능함
 	cv::Mat mBGR[3], end;
 	cv::split(image, mBGR);
 	cv::merge(mBGR, 3, end);
@@ -161,12 +161,129 @@ int main()
 
 int main()
 {
-	
+	//원본 이미지
+	strcat_s(Directory, lulu);
+	cv::Mat image = cv::imread(Directory);		// get source file, 
+	if (!image.data) { printf("\nFail to open input file...");	return 0; }
+	cv::imshow("1. Input Image", image);
+	image.convertTo(image, CV_32F, 1.0 / 255.0);						// scale image as 0~1
 
+
+	cv::Mat dst, Strong, Weak;
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 2.  Strengthen the Color by increasing S in HSV.
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	float	RatioS = 1.5;									// decreasing or increasing ratio
+	cv::cvtColor(image, dst, CV_BGR2HSV);//간단하게 HSV로 바꿀수 있다.
+	cv::Mat vHSV[3];
+	cv::split(dst, vHSV);										// Seperate to Mat array
+	vHSV[1] *= RatioS;												// empahasize the saturation
+	cv::merge(vHSV, 3, dst);									// Merge 3 planes to a Mat.
+	cv::cvtColor(dst, Strong, CV_HSV2BGR);//우리가
+	cv::imshow("2. Strengthened Color", Strong);
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 3.  Weaken the Color by decreasing S in HSV.
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	cv::cvtColor(image, dst, CV_BGR2HSV);				// Convert to HSV
+	cv::split(dst, vHSV);										// Seperate to Mat array
+	vHSV[1] *= 1.0 / RatioS;								// dim the saturation
+	cv::merge(vHSV, 3, dst);									// Merge 3 planes to a Mat.
+	cv::cvtColor(dst, Weak, CV_HSV2BGR);				// Convert HSV to BGR
+	cv::imshow("3. Weakened Color", Weak);
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 4.  Restore the Color by increasing S in HSV.  
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	vHSV[1] *= RatioS;									// empahasize the saturation
+	cv::merge(vHSV, 3, dst);									// Merge 2 planes to a Mat.
+	cv::cvtColor(dst, Strong, CV_HSV2BGR);				// Convert HSV to BGR
+	cv::imshow("4. Restored from weakened color", Strong);
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 5.  Increase brightness by increasing V in HSV.
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	float RatioVup = 2;
+	float RatioVdown = 6;
+	cv::cvtColor(image, dst, CV_BGR2HSV);				// Convert to HSV, again!
+	cv::split(dst, vHSV);										// Seperate Mat array
+	vHSV[2] *= RatioVup;									// increase V
+	cv::merge(vHSV, 3, dst);									// Merge 3 planes to a Mat.
+	cv::cvtColor(dst, dst, CV_HSV2BGR);					// Convert HSV to BGR
+	cv::imshow("5. Brighter Image", dst);
+
+	vHSV[2] *= 1.0 / (RatioVdown);								// decrease V
+	cv::merge(vHSV, 3, dst);									// Merge 3 planes to a Mat.
+	cv::cvtColor(dst, dst, CV_HSV2BGR);					// Convert HSV to BGR
+	cv::imshow("5. Darker Image", dst);
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 6.  Increase both S and V together
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	cv::cvtColor(image, dst, CV_BGR2HSV);				// Convert to HSV, again!
+	cv::split(dst, vHSV);										// Seperate Mat array
+	vHSV[1] *= RatioS;										// increase S
+	vHSV[2] *= RatioVup;									// increase V
+	cv::merge(vHSV, 3, dst);									// Merge 3 planes to a Mat.
+	cv::cvtColor(dst, dst, CV_HSV2BGR);					// Convert HSV to BGR
+	cv::imshow("6. Brighter and Color emphasized Image", dst);
+
+
+	cv::waitKey();   	return 0;
 }
 #endif
 
-#if SUBJECT == 10
+#if SUBJECT == 3
+//HSV
+#include <iostream>
+//#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+int main()
+{
+	// Read input image
+	strcat_s(Directory, lulu);
+	cv::Mat image = cv::imread(Directory);		// get source file, 
+	if (!image.data) { printf("\nFail to open input file...");	return 0; }
+	cv::imshow("Input Image", image);
+	image.convertTo(image, CV_32F, 1.0 / 255.0);
+
+	cv::Mat dst, dst2;
+
+	//image *= 1./255;
+	cvtColor(image, dst, CV_BGR2HLS);
+
+	// Split the image
+	std::vector<cv::Mat> imageHLS, HLS;
+	cv::split(dst, imageHLS);			// imageHLS[0], imageHLS[1], imageHLS[2]
+
+	HLS = imageHLS;					// !!!!! They point to the same data content. This assignment does not copy data.
+	HLS[0] += 180 / 4;					// Rotate hue 90 degrees in counterclockwise. When you are using CV_8U data, value 180 is 360 degrees.
+	cv::merge(HLS, dst2);
+	cvtColor(dst2, dst2, CV_HLS2BGR);
+	cv::namedWindow("Hue rotated by 90 degrees"); cv::imshow("Hue rotated by 90 degrees", dst2);
+
+	HLS[0] += 180 / 4;					// Rotate hue 90 degrees again. total 180.
+	cv::merge(HLS, dst2);
+	cvtColor(dst2, dst2, CV_HLS2BGR);
+	cv::namedWindow("Hue rotated by 180 degrees"); cv::imshow("Hue rotated by 180 degrees", dst2);
+
+	HLS[0] += 180 / 4;					// Rotate hue 90 degrees again. total 270. 
+	cv::merge(HLS, dst2);
+	cvtColor(dst2, dst2, CV_HLS2BGR);
+	cv::namedWindow("Hue rotated by 270 degrees"); cv::imshow("Hue rotated by 270 degrees", dst2);
+
+	HLS[0] += 180 / 4;					// Rotate hue 90 degrees again. total 360.
+	cv::merge(HLS, dst2);
+	cvtColor(dst2, dst2, CV_HLS2BGR);
+	cv::namedWindow("Hue rotated by 360 degrees"); cv::imshow("Hue rotated by 360 degrees", dst2);
+	cv::waitKey();
+	return 0;
+}
+#endif
+#if SUBJECT == 4
 
 //기본적인 픽셀 접근법
 #include <iostream>
@@ -263,7 +380,7 @@ int main() {
 
 
 
-#if SUBJECT == 11
+#if SUBJECT == 5
 
 //정리가 필요한듯 , iterator를 이용한 접근,필터(박스 필터)
 #include <iostream>
