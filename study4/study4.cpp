@@ -1,6 +1,95 @@
-#define SUBJECT 0
+//선택하기
+#define SUBJECT 1
 
-#if SUBJECT == 12
+//사용전에 경로 바꿀것!
+char	Directory[80] = "D:\\GoogleDrive\\miniStudy\\images\\";
+char	lulu[50] = "Lulu.jpg";	
+#if SUBJECT == 0
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <iostream>
+
+using namespace std;
+static cv::Mat getImageOfHistogram(const cv::Mat &hist, int zoom) {//zoom은 확대
+
+        // bin의 최대값 최소값을 얻는다. (필요한것은 최대값)
+        double maxVal = 0;
+        double minVal = 0;
+        cv::minMaxLoc(hist, &minVal, &maxVal, 0, 0);
+
+        // 히스토그램의 세로를 얻는다.
+        int histSize = hist.rows;
+
+        //히스토그램을 그릴 Mat형 객체를 만든다.
+        cv::Mat histImg(histSize*zoom, histSize*zoom, CV_8U, cv::Scalar(255));
+
+        // 각 bin을 찍어준다.
+        for (int h = 0; h < histSize; h++) {
+
+            float binVal = hist.at<float>(h);
+            if (binVal>0) {
+                int intensity = (int)(binVal*histSize / maxVal);
+                cv::line(histImg, //입력 영상
+					cv::Point(h*zoom, histSize*zoom),//위에서
+                    cv::Point(h*zoom, (histSize - intensity)*zoom), //아래로
+					cv::Scalar(0), //선의색
+					zoom);//선의 두께
+            }
+        }
+
+        return histImg;
+}
+int main(){
+	strcat_s(Directory, lulu);
+	cv::Mat image = cv::imread(Directory);
+	if (!image.data)		return 0;
+	cv::namedWindow("Input Image");	cv::imshow("Input Image", image);
+	
+	int histSize = 32;
+	float range[] = {0, 256};
+	const float* ranges[] = {range};
+	int channels = 0;
+	cv::Mat hist;
+
+	cv::calcHist(&image,//입력영상, &의형태로 입력되는것에 유의 - 여러개의 이미지가 가능
+			1,//이미지 개수
+			&channels,//채널
+			cv::Mat(),//마스크 - 선택적, 빈 Mat형 객체를 넣어주어도 됨
+			hist,//출력 히스토그램
+			1,//히스토그램의 차원 보통 1이지만 2차원 히스토그램도 있음
+			&histSize,//bin의 크기
+			ranges//range가 어떻게 입력되는지 유의
+			);
+	
+	cv::imshow("calcHist",getImageOfHistogram(hist,1));
+
+	cv::Mat histImage(512,512,CV_8U);//히스토 그램을그릴 이미지
+	cv::normalize(hist,hist,0,histImage.rows,cv::NORM_MINMAX,CV_32F);
+
+	histImage = cv::Scalar(255);//바탕을 흰색으로
+
+	//bin의 크기를 구함
+	int binW = cvRound((double)(histImage.cols/histSize));//cvRound()함수:double값을 int로 캐스팅이랑 비슷
+	
+	int x1,y1,x2,y2;
+	for(int i = 0; i < histSize; i++){
+		x1 = i*binW;
+		y1 = histImage.rows;
+		x2 = (i+1)*binW;
+		y2 = histImage.rows - cvRound(hist.at<float>(i));
+		rectangle(histImage,cv::Point(x1,y1),cv::Point(x2,y2),cv::Scalar(0),-1);
+	}
+
+	cv::imshow("histImage",histImage);
+
+	cv::waitKey();
+	return 0;
+}
+#endif
+#if SUBJECT == 1
+
+#endif
+#if SUBJECT == 1
 //필터2d와 sep필터2d사용
 #include <iostream>
 //#include <opencv2/core/core.hpp>
@@ -10,10 +99,10 @@
 int main()
 {
 	// Read input image
-	cv::Mat image = cv::imread("c:/cmk/miniStudy/Lulu.jpg");
+	strcat_s(Directory, lulu);
+	cv::Mat image = cv::imread(Directory);
 	if (!image.data)		return 0;
 	cv::namedWindow("Input Image");	cv::imshow("Input Image", image);
-
 	// 
 	int ksize = 7;
 	int ddepth = -1;
